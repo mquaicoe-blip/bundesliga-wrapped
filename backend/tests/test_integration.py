@@ -24,18 +24,14 @@ from backend.pipeline.personalization import build_context
 from backend.pipeline.narrative_generator import generate_all_slides
 from backend.pipeline.slide_assembler import assemble_slides, get_club_theme
 
-# ---------------------------------------------------------------------------
 # Valid values for assertion
-# ---------------------------------------------------------------------------
 
 VALID_SLIDE_TYPES = {"hero", "fan_dna", "player_bond", "goal_of_season", "match_of_season", "season_arc", "personal_angle", "share"}
 VALID_ANIMATIONS = {"counter", "fade", "slide_up", "pulse"}
 VALID_TONES = {"commentator", "analyst", "fan"}
 
 
-# ---------------------------------------------------------------------------
 # Fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def bayern_user() -> UserProfile:
@@ -179,9 +175,7 @@ def sample_matches() -> dict[str, MatchRecord]:
     }
 
 
-# ---------------------------------------------------------------------------
 # End-to-end pipeline test
-# ---------------------------------------------------------------------------
 
 class TestEndToEndPipeline:
     """Full pipeline integration test using dry_run mode."""
@@ -262,9 +256,7 @@ class TestEndToEndPipeline:
             assert slide.tone == "analyst"
 
 
-# ---------------------------------------------------------------------------
 # Automation / multi-club test
-# ---------------------------------------------------------------------------
 
 class TestMultiClubAutomation:
     """Proves the pipeline produces different outputs for different clubs."""

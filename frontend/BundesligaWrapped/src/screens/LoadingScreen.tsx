@@ -47,7 +47,7 @@ export function LoadingScreen({ error }: LoadingScreenProps) {
   return (
     <View style={styles.container}>
       <Animated.View style={pulseStyle}>
-        <Text style={styles.logo}>⚽</Text>
+        <Text style={styles.logo}>BW</Text>
       </Animated.View>
       <Text style={styles.text}>Loading your Wrapped...</Text>
     </View>

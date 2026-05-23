@@ -17,9 +17,7 @@ from backend.data.schema import UserProfile
 from backend.pipeline.personalization import compute_fan_dna
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 def _make_user(**kwargs) -> UserProfile:
     """Create a UserProfile with sensible defaults, overriding with kwargs."""
@@ -42,9 +40,7 @@ def _make_user(**kwargs) -> UserProfile:
     return UserProfile(**defaults)
 
 
-# ---------------------------------------------------------------------------
 # Tests
-# ---------------------------------------------------------------------------
 
 class TestFanDnaBoundaries:
     """Verify the score stays within [0, 100] for all inputs."""

@@ -24,9 +24,7 @@ from backend.pipeline.personalization import (
 )
 
 
-# ---------------------------------------------------------------------------
 # Fixtures — reusable mock data
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def bayern_club() -> ClubStats:
@@ -200,9 +198,7 @@ def sample_matches() -> dict[str, MatchRecord]:
     }
 
 
-# ---------------------------------------------------------------------------
 # Tests: score_player_importance
-# ---------------------------------------------------------------------------
 
 class TestScorePlayerImportance:
     def test_favourite_player_gets_high_score(self, super_fan, kane):
@@ -232,9 +228,7 @@ class TestScorePlayerImportance:
         assert score >= 0.5
 
 
-# ---------------------------------------------------------------------------
 # Tests: classify_season_narrative
-# ---------------------------------------------------------------------------
 
 class TestClassifySeasonNarrative:
     def test_title_race(self, bayern_club):
@@ -270,9 +264,7 @@ class TestClassifySeasonNarrative:
             assert classify_season_narrative(club) in valid
 
 
-# ---------------------------------------------------------------------------
 # Tests: score_match_drama
-# ---------------------------------------------------------------------------
 
 class TestScoreMatchDrama:
     def test_rivalry_match_scores_higher(self, sample_matches):
@@ -299,9 +291,7 @@ class TestScoreMatchDrama:
         assert drama > 0
 
 
-# ---------------------------------------------------------------------------
 # Tests: compute_fan_dna
-# ---------------------------------------------------------------------------
 
 class TestComputeFanDna:
     def test_super_fan_high_score(self, super_fan):
@@ -325,9 +315,7 @@ class TestComputeFanDna:
         assert 0 <= score <= 100
 
 
-# ---------------------------------------------------------------------------
 # Tests: build_context (integration)
-# ---------------------------------------------------------------------------
 
 class TestBuildContext:
     def test_super_fan_context(self, super_fan, bayern_club, kane, musiala, sample_matches):

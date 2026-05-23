@@ -27,9 +27,7 @@ from backend.pipeline.narrative_generator import (
 from backend.pipeline.personalization import build_context
 
 
-# ---------------------------------------------------------------------------
 # Fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def sample_context() -> PersonalizationContext:
@@ -87,9 +85,7 @@ def sample_context() -> PersonalizationContext:
     return build_context(user, club, players, matches, tone="commentator")
 
 
-# ---------------------------------------------------------------------------
 # Tests: generate_all_slides structure
-# ---------------------------------------------------------------------------
 
 EXPECTED_SLIDE_TYPES = {"hero", "fan_dna", "player_bond", "goal_of_season",
                         "match_of_season", "season_arc", "personal_angle", "share"}
