@@ -1,253 +1,134 @@
-# Bundesliga Wrapped ⚽🏆
+# Bundesliga Wrapped
 
-> *"From 500 million global fans to 500 million individual stories."*
+A personalized season summary for Bundesliga fans — think Spotify Wrapped, but for football. Built for the AWS World Sports Innovation Cup 2026 (Challenge 1).
 
-**AWS World Sports Innovation Cup 2026 — Challenge 1: Build Bundesliga Wrapped**
+You give it a club and a user. It gives back an 8-slide story experience telling that fan what their season meant — their stats, their player, their moments, their way.
 
----
+## What it does
 
-## Overview
+The pipeline takes raw DFL match data (306 XML files), player rosters (18 clubs), and anonymized app engagement data (26,242 records across 2,765 users) and turns it into a personalized Wrapped for any fan of any club. No hardcoding. Change the `club_id` parameter and you get a completely different experience — different colors, different players, different narrative.
 
-Bundesliga Wrapped is a Spotify Wrapped–style personalized season summary for the official Bundesliga app. It transforms raw match data, player statistics, and individual app engagement into a 7-slide swipeable story experience that makes every fan feel seen — their club, their player, their season, their way.
+Each Wrapped has 8 slides:
 
-Powered by Amazon Bedrock (Claude Sonnet) for AI narrative generation and built on the DFL's existing AWS data infrastructure, the system automatically generates unique Wraps for any of the 18 Bundesliga clubs with zero manual reconfiguration. One `club_id` parameter change produces an entirely different, club-themed experience. The tone selector lets fans choose how their story is told: Commentator, Analyst, or Fan voice.
+1. **Hero card** — one big number that defines your season
+2. **Fan DNA** — a 0-100 score with a personality archetype (8 types)
+3. **Player bond** — your player of the season with an AI-written sentence about them
+4. **Goal of the season** — with the actual video clip if available
+5. **Match of the season** — the most dramatic match you followed
+6. **Season arc** — month-by-month timeline of your engagement
+7. **Personal angle** — a surprising stat about your own behaviour
+8. **Share card** — pre-written caption ready for Instagram/WhatsApp/X
 
----
+The fan picks a narrative tone before starting: Commentator (dramatic), Analyst (data-forward), or Fan (casual/Gen Z). One parameter change shifts the entire voice across all 8 slides.
 
-## Architecture
+## How it works
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    BUNDESLIGA WRAPPED                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────┐    ┌──────────────┐    ┌───────────────────┐     │
-│  │  AWS S3  │───▶│  Data Loader │───▶│  Personalization  │     │
-│  │  (Data)  │    │  (boto3/XML) │    │  Engine (Scoring) │     │
-│  └──────────┘    └──────────────┘    └────────┬──────────┘     │
-│                                               │                 │
-│                                               ▼                 │
-│  ┌──────────┐    ┌──────────────┐    ┌───────────────────┐     │
-│  │  React   │◀───│   Slide      │◀───│  Amazon Bedrock   │     │
-│  │  Native  │    │  Assembler   │    │  (Claude Sonnet)  │     │
-│  │  (Expo)  │    │  (JSON out)  │    │  Narrative Gen    │     │
-│  └──────────┘    └──────────────┘    └───────────────────┘     │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-
-Layer 1: Data         → S3 bucket (match XMLs, player rosters, user JSON, videos)
-Layer 2: Processing   → Python pipeline (boto3, pandas, XML parsing)
-Layer 3: Scoring      → PersonalizationContext assembly (Fan DNA, drama scoring)
-Layer 4: AI Narrative → Amazon Bedrock (tone-aware narrative generation)
-Layer 5: Delivery     → React Native (Expo) swipeable story UI
+S3 data (XMLs, JSON, video clips)
+    → Python scoring engine (Fan DNA, drama ranking, player importance)
+        → Amazon Bedrock (Claude Sonnet — generates narrative copy per slide)
+            → JSON output (consumed by React Native frontend)
 ```
 
----
+The scoring engine figures out what matters most to each user — which player they followed, which matches were dramatic, how consistent their engagement was. Then Bedrock writes the copy in the chosen tone. The frontend renders it as swipeable story slides with animations.
 
-## Slide Sequence
+## Running it
 
-| # | Slide | Animation | Description |
-|---|-------|-----------|-------------|
-| 1 | Hero / Identity Card | fade | Your season in one hero stat |
-| 2 | Fan DNA Score | counter | Your fandom profile (0–100) with archetype |
-| 3 | Player Bond | slide_up | Your player of the season + AI narrative |
-| 4 | Match of the Season | slide_up | AI-selected drama peak + highlight clip |
-| 5 | Season Arc | counter | Your club's season told through your eyes |
-| 6 | Personal Angle | pulse | Your most surprising fan behaviour stat |
-| 7 | Share | fade | Branded card with social caption + share button |
+### Prerequisites
 
----
+- Python 3.11+
+- AWS credentials with access to the hackathon S3 bucket
+- Node.js 20-22 (for the React Native app — optional for demo)
 
-## Prerequisites
-
-- Python 3.11+ (`py --version`)
-- AWS CLI v2 with valid credentials
-- Node.js 20+ and npm (for frontend)
-- Expo CLI (`npm install -g expo-cli`)
-
----
-
-## Setup
-
-### 1. AWS credentials
-
-Get fresh credentials from the SSO portal and set them:
+### Quick start
 
 ```bash
-export AWS_ACCESS_KEY_ID="..."
-export AWS_SECRET_ACCESS_KEY="..."
-export AWS_SESSION_TOKEN="..."
-```
-
-Or paste them into a `.env` file (copy from `.env.example`).
-
-### 2. Python environment
-
-```bash
+git clone https://github.com/mquaicoe-blip/bundesliga-wrapped.git
 cd bundesliga-wrapped
+
+# Set up Python
 python -m venv venv
-source venv/bin/activate          # Mac/Linux
-venv\Scripts\activate             # Windows
+source venv/bin/activate        # Mac/Linux
+venv\Scripts\activate           # Windows
 pip install -r backend/requirements.txt
-```
 
-### 3. Environment variables
-
-```bash
+# Copy .env and fill in your bucket name
 cp .env.example .env
-# Edit .env: set HACKATHON_BUCKET=hackathon-data-<your-account-id>
+
+# Run the pipeline (dry-run, no AWS calls needed)
+python -m backend.pipeline.slide_assembler --dry-run --tone fan
+
+# Run for a different club
+python -m backend.pipeline.slide_assembler --dry-run --club-id DFL-CLU-000007 --tone commentator
+
+# Run tests
+python -m pytest backend/tests/ -v
 ```
 
-### 4. Copy S3 data (if not already done)
+### Running with real data from S3
 
-```bash
-export CHALLENGE="Challenge 1 – Build Bundesliga Wrapped"
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-aws s3 mb s3://hackathon-data-$ACCOUNT_ID --region eu-central-1
-aws s3 cp "s3://aws-world-sports-innovation-cup-data/$CHALLENGE/" \
-          "s3://hackathon-data-$ACCOUNT_ID/$CHALLENGE/" --recursive
-```
+You need valid AWS credentials. Get them from the SSO portal, set them as environment variables, then drop the `--dry-run` flag. The pipeline will fetch data from S3 and (if Bedrock model access is enabled) generate real AI narratives.
 
-### 5. Explore the data
-
-```bash
-jupyter lab notebooks/01_explore_data.ipynb
-```
-
-### 6. Run the pipeline
-
-```bash
-# Dry-run (no Bedrock calls, uses templated narratives):
-py -m backend.pipeline.slide_assembler --dry-run --tone fan
-
-# Full run (requires Bedrock access):
-py -m backend.pipeline.slide_assembler --club-id DFL-CLU-00000G --user-id <hash>
-
-# Batch run for multiple users:
-py -m backend.pipeline.automation --clubs DFL-CLU-00000G --users user1,user2 --dry-run
-```
-
-### 7. Start the React Native app
+### React Native app
 
 ```bash
 cd frontend/BundesligaWrapped
 npm install
-npx expo start
+npx expo start --web
 ```
 
-Serve the backend output locally:
-```bash
-py -m http.server 8000 --directory output
-```
+Requires Node 20-22 (Node 24 is incompatible with Expo 52). The app fetches `wrapped.json` from whatever URL you set in `EXPO_PUBLIC_API_URL`.
 
----
+## The automation proof
 
-## Adding a New Club
+This is what the challenge brief specifically asks for — "input data for a second club, get equally relevant output without manual reconfiguration."
 
-No code changes needed. Just ensure the S3 bucket has:
-1. Player roster XML: `data/feeds-exports-24-25/players/01.05.<ClubId>_DFL-SEA-0001K8.xml`
-2. Match XMLs (shared): `data/feeds-exports-24-25/matches/*.xml`
-3. User engagement JSON (shared): `data/bundesliga_wrapped_challenge_dataset.json`
+We tested all 18 Bundesliga clubs. Same code, different `club_id`:
 
-Then run:
-```bash
-py -m backend.pipeline.slide_assembler --club-id <NEW_CLUB_ID> --user-id <USER> --dry-run
-```
+- Bayern → red (#DC052D), title-race narrative, Kane goal clip
+- Dortmund → yellow (#FDE100), solid narrative, different players
+- Freiburg → black (#000000), different stats, different moments
+- ...all 18 work
 
-The pipeline auto-resolves club colors, player data, and match history.
+58 automated tests verify this.
 
----
-
-## Running Tests
-
-```bash
-# All tests:
-python -m pytest backend/tests/ -v
-
-# Specific suites:
-python -m pytest backend/tests/test_personalization.py -v
-python -m pytest backend/tests/test_fan_dna.py -v
-python -m pytest backend/tests/test_narrative.py -v
-python -m pytest backend/tests/test_integration.py -v
-```
-
----
-
-## Project Structure
+## Project structure
 
 ```
-bundesliga-wrapped/
-├── backend/
-│   ├── config/
-│   │   └── aws_config.py              # AWS session factory (SSO + env var fallback)
-│   ├── data/
-│   │   ├── schema.py                  # All dataclasses (PlayerStats, ClubStats, etc.)
-│   │   ├── data_loader.py            # S3 → dataclass loaders with caching
-│   │   └── s3_loader.py              # Low-level S3 operations
-│   ├── pipeline/
-│   │   ├── personalization.py        # Scoring engine (Fan DNA, drama, player importance)
-│   │   ├── narrative_generator.py    # Amazon Bedrock narrative generation
-│   │   ├── slide_assembler.py        # Final assembly + JSON export + orchestrator
-│   │   ├── automation.py             # Batch runner + validation
-│   │   └── test_personalization.py   # 25 unit tests
-│   ├── tests/
-│   │   └── test_integration.py       # 8 end-to-end integration tests
-│   └── requirements.txt
-├── frontend/BundesligaWrapped/
-│   ├── App.tsx
-│   └── src/
-│       ├── types/wrapped.ts           # TS interfaces matching Python schema
-│       ├── utils/{colors,animations}.ts
-│       ├── hooks/{useWrappedData,useSlideTimer}.ts
-│       ├── components/
-│       │   ├── SlideContainer.tsx     # Full-screen swipeable wrapper
-│       │   ├── AnimatedStat.tsx       # Counting animation
-│       │   ├── ProgressBar.tsx        # Story-style progress dots
-│       │   └── slides/{Hero,TopPlayer,SeasonJourney,Moment,Share}Slide.tsx
-│       └── screens/{Loading,Wrapped}Screen.tsx
-├── notebooks/
-│   ├── 01_explore_data.ipynb          # Data exploration
-│   └── 02_demo.ipynb                  # Presentation demo
-├── docs/
-│   ├── strategy.md                    # Research & strategy (Section 0)
-│   └── business_plan.md              # Business plan (Section 7)
-├── .env.example
-├── .gitignore
-├── Makefile
-└── README.md
+backend/
+  config/aws_config.py          — AWS session factory
+  data/schema.py                — all dataclasses (single source of truth)
+  data/data_loader.py           — S3 → typed objects with caching
+  data/s3_loader.py             — low-level S3 operations
+  pipeline/personalization.py   — scoring engine (Fan DNA, drama, player ranking)
+  pipeline/narrative_generator.py — Bedrock prompts + response parsing
+  pipeline/slide_assembler.py   — final assembly + full pipeline orchestrator
+  pipeline/automation.py        — batch runner + validation
+  tests/                        — 58 tests across 4 files
+
+frontend/BundesligaWrapped/     — React Native (Expo) swipeable story UI
+notebooks/                      — data exploration + demo notebook
+docs/                           — strategy, business plan, executive summary
 ```
 
----
+## Key decisions
 
-## AWS Services Used
+- **Why dataclasses, not Pydantic?** Zero dependencies. `dataclasses.asdict()` gives free JSON serialization. Reviewers can read it without knowing a library.
+- **Why dry_run on everything?** Bedrock costs money. Every function that calls Bedrock has a `dry_run=True` path that returns templated output. Development costs $0.
+- **Why 8 archetypes?** Spotify's personality features are their most-shared element. More specific = more viral. "The Stats Geek" is more shareable than "Engaged Fan."
+- **Why tone as a single parameter?** No separate code paths. One field on PersonalizationContext gets injected into every Bedrock prompt. Change it once, entire narrative shifts.
 
-| Service | Role |
-|---------|------|
-| Amazon S3 | Data lake — match XMLs, player data, video assets, output JSON |
-| Amazon Bedrock (Claude Sonnet) | AI narrative generation in 3 tones |
-| AWS Lambda (production) | Serverless pipeline execution |
-| Amazon CloudFront (production) | Global CDN for wrapped.json + share cards |
+## Cost
 
----
+~$0.12 per user Wrapped at scale (Bedrock tokens + S3 + Lambda). At 1M users that's $120K/year for a full AI personalization layer — a rounding error compared to the engagement value.
 
-## Narrative Tone System
+## What's in docs/
 
-The `tone` parameter shifts the entire narrative voice across all 7 slides:
-
-| Tone | Style | Example |
-|------|-------|---------|
-| `commentator` | Dramatic, broadcast-style | "What a season it's been at the Allianz Arena!" |
-| `analyst` | Data-forward, tactical | "26 goals from 22.54 xG — a +3.46 overperformance." |
-| `fan` | Casual, Gen Z energy | "bro 220 times you opened the app?? that's dedication 🔥" |
+- `strategy.md` — competitive research (what Spotify/YouTube/NBA/Strava do)
+- `business_plan.md` — delivery frequency, engagement strategy, monetization, KPIs
+- `executive_summary.md` — 5-slide pitch deck content
+- `advanced_features_plan.md` — roadmap features inspired by 2025 platform recaps
 
 ---
 
-## Team
-
-AWS World Sports Innovation Cup 2026 — Challenge 1
-
----
-
-## License
-
-Hackathon submission — not for redistribution.
+Built for the AWS World Sports Innovation Cup 2026. Challenge 1: Build Bundesliga Wrapped.
