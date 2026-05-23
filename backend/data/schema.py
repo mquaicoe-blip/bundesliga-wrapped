@@ -436,7 +436,15 @@ class PersonalizationContext:
     fan_dna_score: int = 0
     fan_dna_breakdown: dict[str, int] = field(default_factory=dict)
     # e.g. {"loyalty": 80, "intensity": 65, "breadth": 50}
-    fan_dna_archetype: str = ""     # e.g. "The Ultras Regular"
+    fan_dna_archetype: str = ""     # e.g. "The Stats Geek"
+
+    # Slide 2b — Fan Generation (viral "Listening Age" equivalent)
+    fan_generation: str = ""        # e.g. "Gen Z Fan"
+    fan_generation_description: str = ""  # One sentence explanation
+
+    # Slide 2c — Monthly Timeline (for Season Arc animation)
+    monthly_timeline: list[dict] = field(default_factory=list)
+    # List of {"month": "2025-01", "engagement_score": 85, "peak": True, "label": "..."}
 
     # Slide 3 — Player Bond
     favourite_player: Optional[PlayerStats] = None

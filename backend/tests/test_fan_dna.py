@@ -147,18 +147,17 @@ class TestFanDnaArchetypes:
     """Verify archetype assignment based on dominant dimension."""
 
     def test_superfan_gets_loyalty_archetype(self):
-        """User with high loyalty → Season Ticket Holder."""
+        """User with high loyalty → The Loyal Regular."""
         user = _make_user(active_months=12, total_match_center_views=20)
         _, _, archetype = compute_fan_dna(user)
-        assert "Season Ticket" in archetype
+        assert "Loyal Regular" in archetype
 
     def test_intensity_dominant_gets_matchday_archetype(self):
-        """User with high intensity → Matchday Obsessive."""
+        """User with high intensity → Matchday Obsessive or Playoff Fan."""
         user = _make_user(active_months=3, total_match_center_views=300)
         _, breakdown, archetype = compute_fan_dna(user)
-        # intensity should dominate
-        if breakdown["intensity"] > breakdown["loyalty"]:
-            assert "Matchday" in archetype
+        # With low loyalty (3/12) and high intensity, should be Playoff Fan or Matchday Obsessive
+        assert "Matchday" in archetype or "Playoff" in archetype
 
     def test_breadth_dominant_gets_scholar_archetype(self):
         """User with high breadth → Football Scholar."""

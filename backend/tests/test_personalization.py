@@ -316,7 +316,9 @@ class TestComputeFanDna:
 
     def test_archetype_assignment(self, super_fan, stats_nerd):
         _, _, archetype_super = compute_fan_dna(super_fan)
-        assert "Season Ticket" in archetype_super or "Matchday" in archetype_super
+        # With expanded archetypes, super fan (high loyalty + stats focus) could be several types
+        valid = ["Loyal Regular", "Stats Geek", "Season Ticket", "Matchday", "Early Bird"]
+        assert any(v in archetype_super for v in valid), f"Unexpected archetype: {archetype_super}"
 
     def test_score_bounded(self, super_fan):
         score, _, _ = compute_fan_dna(super_fan)

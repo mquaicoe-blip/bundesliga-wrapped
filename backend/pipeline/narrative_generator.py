@@ -284,9 +284,15 @@ def generate_season_journey_slide(ctx: PersonalizationContext, dry_run: bool = F
         {"headline": str, "narrative_text": str}
     """
     if dry_run:
+        # Include monthly timeline summary if available
+        timeline_summary = ""
+        if ctx.monthly_timeline:
+            peak = next((m for m in ctx.monthly_timeline if m.get("peak")), None)
+            if peak:
+                timeline_summary = f" Your peak month was {peak['month']}."
         return {
             "headline": "The Season That Was",
-            "narrative_text": f"{ctx.club.club_name} scored {ctx.club.goals_scored} goals across 34 matchdays. "
+            "narrative_text": f"{ctx.club.club_name} scored {ctx.club.goals_scored} goals across 34 matchdays.{timeline_summary} "
                              f"The highlight? {ctx.best_match_reason or 'Every single matchday.'}",
         }
 
@@ -404,7 +410,7 @@ def generate_fan_dna_slide(ctx: PersonalizationContext, dry_run: bool = False) -
         return {
             "headline": f"Fan DNA: {ctx.fan_dna_score}",
             "subtext": f"You're {ctx.fan_dna_archetype}",
-            "archetype_description": "Loyal, consistent, always there when it matters.",
+            "archetype_description": f"{ctx.fan_generation} — {ctx.fan_generation_description}" if ctx.fan_generation else "Loyal, consistent, always there when it matters.",
         }
 
     prompt = f"""<context>

@@ -244,15 +244,198 @@ def compute_fan_dna(user: UserProfile) -> tuple[int, dict[str, int], str]:
 
     breakdown = {"loyalty": loyalty, "intensity": intensity, "breadth": breadth}
 
-    # Archetype based on dominant dimension
-    if loyalty >= intensity and loyalty >= breadth:
-        archetype = "The Season Ticket Holder"  # consistent, always there
-    elif intensity >= loyalty and intensity >= breadth:
-        archetype = "The Matchday Obsessive"    # deep diver on game days
-    else:
-        archetype = "The Football Scholar"      # reads/watches everything
+    # Archetype assignment — 8 specific personality types based on behavioural signals.
+    # More specific = more shareable (inspired by Spotify's Listening Character
+    # and YouTube's 12 personality types which were the most viral elements).
+    archetype = _assign_archetype(user, loyalty, intensity, breadth)
 
     return overall, breakdown, archetype
+
+
+def _assign_archetype(
+    user: UserProfile, loyalty: int, intensity: int, breadth: int
+) -> str:
+    """Assign one of 8 fan archetypes based on engagement patterns.
+
+    Priority order matters — first match wins. More specific patterns are
+    checked before generic fallbacks.
+
+    Args:
+        user: The user profile.
+        loyalty: Loyalty score (0–100).
+        intensity: Intensity score (0–100).
+        breadth: Breadth score (0–100).
+
+    Returns:
+        Archetype label string.
+    """
+    # The Stats Geek — spends most match-centre time on the stats screen
+    if user.stats_focus_ratio > 0.45 and intensity > 50:
+        return "The Stats Geek"
+
+    # The Ticker Addict — lives on the live ticker during matches
+    if user.ticker_focus_ratio > 0.45 and intensity > 50:
+        return "The Ticker Addict"
+
+    # The Binge Watcher — video consumption dominates over reading
+    if user.total_video_views > (user.total_article_views + user.total_story_views) and breadth > 40:
+        return "The Binge Watcher"
+
+    # The Loyal Regular — active every single month, never misses
+    if loyalty == 100:
+        return "The Loyal Regular"
+
+    # The Playoff Fan — only shows up for the big months (low loyalty, some intensity)
+    if loyalty < 50 and intensity > 40:
+        return "The Playoff Fan"
+
+    # The Early Bird — high app opens relative to content consumed (checks in often, quick sessions)
+    if user.total_app_opens > 150 and breadth < 40:
+        return "The Early Bird"
+
+    # The Matchday Obsessive — intensity dominates everything else
+    if intensity >= loyalty and intensity >= breadth:
+        return "The Matchday Obsessive"
+
+    # The Football Scholar — broad content consumer, reads everything
+    if breadth >= loyalty and breadth >= intensity:
+        return "The Football Scholar"
+
+    # Default fallback — loyalty-dominant
+    return "The Season Ticket Holder"
+
+
+# ---------------------------------------------------------------------------
+# Fan Generation score ("Listening Age" equivalent)
+# ---------------------------------------------------------------------------
+
+def compute_fan_generation(user: UserProfile) -> tuple[str, str]:
+    """Determine the user's "Fan Generation" — their fandom style archetype.
+
+    Inspired by Spotify's viral "Listening Age" feature (2025). Calculates
+    whether the user behaves like a modern digital-native fan or a traditional
+    football supporter based on their consumption patterns.
+
+    Signals:
+      - Video-first consumption → modern/Gen Z
+      - Article-heavy consumption → traditional
+      - High frequency, short sessions → modern
+      - Stats-focused → analytical (cross-generational)
+      - Ticker-focused → traditional matchday fan
+
+    Args:
+        user: Aggregated UserProfile.
+
+    Returns:
+        Tuple of (generation_label, description).
+        generation_label: "Gen Z Fan" | "Millennial Fan" | "Classic Fan" | "Analyst Fan"
+        description: One sentence explaining the classification.
+    """
+    # Calculate consumption ratios
+    total_content = user.total_article_views + user.total_story_views + user.total_video_views
+    if total_content == 0:
+        return ("New Fan", "You're just getting started — your fan identity is still forming")
+
+    video_ratio = user.total_video_views / max(total_content, 1)
+    article_ratio = user.total_article_views / max(total_content, 1)
+
+    # High stats focus + high intensity = Analyst Fan (cross-generational)
+    if user.stats_focus_ratio > 0.4 and user.total_match_center_views > 100:
+        return ("Analyst Fan", "You consume football through numbers — xG, pass maps, and tactical breakdowns are your language")
+
+    # Video-dominant + high frequency = Gen Z Fan
+    if video_ratio > 0.5 and user.app_opens_per_week > 3:
+        return ("Gen Z Fan", "Highlights, clips, and vertical video — you experience football in bursts of pure energy")
+
+    # Balanced consumption + moderate frequency = Millennial Fan
+    if 0.25 <= video_ratio <= 0.5 and user.active_months >= 8:
+        return ("Millennial Fan", "You blend the old and new — articles for depth, video for the moments that matter")
+
+    # Article-dominant or ticker-focused = Classic Fan
+    if article_ratio > 0.4 or user.ticker_focus_ratio > 0.4:
+        return ("Classic Fan", "Match reports, live tickers, and the morning paper — you follow football the way it was meant to be followed")
+
+    # Default
+    return ("Millennial Fan", "A balanced mix of content — you take football however it comes")
+
+
+# ---------------------------------------------------------------------------
+# Month-by-Month Timeline
+# ---------------------------------------------------------------------------
+
+def compute_monthly_timeline(user: UserProfile) -> list[dict]:
+    """Build a month-by-month engagement timeline for the Season Arc slide.
+
+    Creates a data structure showing the user's engagement intensity per month,
+    suitable for rendering as a mini bar chart or timeline animation.
+
+    Each month entry includes:
+      - month: "YYYY-MM" string
+      - engagement_score: 0–100 normalised activity level
+      - peak: bool (was this the user's most active month?)
+      - label: short description ("Your biggest month", "Quiet month", etc.)
+
+    Args:
+        user: UserProfile with monthly_records populated.
+
+    Returns:
+        List of 12 month dicts (or fewer if user has fewer active months),
+        sorted chronologically.
+    """
+    if not user.monthly_records:
+        return []
+
+    # Calculate engagement score per month
+    monthly_scores: list[dict] = []
+    for record in user.monthly_records:
+        # Sum all available activity signals for this month
+        activity = sum(filter(None, [
+            record.screen_view_home_count,
+            record.screen_view_match_center_total_count,
+            record.article_view_count,
+            record.story_view_count,
+            record.video_view_count,
+        ]))
+        monthly_scores.append({
+            "month": record.month[:7] if record.month else "",  # "YYYY-MM"
+            "raw_activity": activity,
+        })
+
+    if not monthly_scores:
+        return []
+
+    # Normalise to 0–100 scale
+    max_activity = max(m["raw_activity"] for m in monthly_scores)
+    if max_activity == 0:
+        max_activity = 1  # avoid division by zero
+
+    peak_month = max(monthly_scores, key=lambda m: m["raw_activity"])
+
+    timeline: list[dict] = []
+    for m in sorted(monthly_scores, key=lambda x: x["month"]):
+        score = int((m["raw_activity"] / max_activity) * 100)
+        is_peak = m["month"] == peak_month["month"]
+
+        # Assign a label based on relative activity
+        if is_peak:
+            label = "Your biggest month"
+        elif score >= 70:
+            label = "High energy"
+        elif score >= 40:
+            label = "Steady"
+        elif score > 0:
+            label = "Quiet month"
+        else:
+            label = "Off"
+
+        timeline.append({
+            "month": m["month"],
+            "engagement_score": score,
+            "peak": is_peak,
+            "label": label,
+        })
+
+    return timeline
 
 
 # ---------------------------------------------------------------------------
@@ -569,6 +752,12 @@ def build_context(
     # ── 4. Fan DNA Score ──────────────────────────────────────────────────────
     fan_dna_score, fan_dna_breakdown, fan_dna_archetype = compute_fan_dna(user)
 
+    # ── 4b. Fan Generation ────────────────────────────────────────────────────
+    fan_generation, fan_generation_desc = compute_fan_generation(user)
+
+    # ── 4c. Monthly Timeline ──────────────────────────────────────────────────
+    monthly_timeline = compute_monthly_timeline(user)
+
     # ── 5. Hero stat ──────────────────────────────────────────────────────────
     hero_label, hero_value = select_hero_stat(user, club)
 
@@ -584,6 +773,9 @@ def build_context(
         fan_dna_score=fan_dna_score,
         fan_dna_breakdown=fan_dna_breakdown,
         fan_dna_archetype=fan_dna_archetype,
+        fan_generation=fan_generation,
+        fan_generation_description=fan_generation_desc,
+        monthly_timeline=monthly_timeline,
         favourite_player=top_player,
         player_bond_stat_label=player_bond_label,
         player_bond_stat_value=player_bond_value,
