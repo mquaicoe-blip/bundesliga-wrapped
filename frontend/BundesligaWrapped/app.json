@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Bundesliga Wrapped",
+    "slug": "bundesliga-wrapped",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#1A1A2E"
+    },
+    "plugins": [
+      "expo-router",
+      "react-native-reanimated"
+    ]
+  }
+}

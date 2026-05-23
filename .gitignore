@@ -1,0 +1,77 @@
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.aws/credentials
+*.pem
+*.key
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ── Generated output (pipeline results — regenerated on each run) ─────────────
+output/
+output_test/
+
+# ── Raw data files (large binary / media assets — never commit these) ─────────
+data/raw/
+*.mp4
+*.mov
+*.avi
+# Images (data assets only — not UI assets in frontend/)
+backend/data/**/*.jpg
+backend/data/**/*.jpeg
+backend/data/**/*.png
+backend/data/**/*.gif
+notebooks/data/**/*.jpg
+notebooks/data/**/*.png
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── React Native / Expo ───────────────────────────────────────────────────────
+node_modules/
+.expo/
+.expo-shared/
+frontend/BundesligaWrapped/dist/
+frontend/BundesligaWrapped/build/
+frontend/BundesligaWrapped/.metro-cache/
+frontend/BundesligaWrapped/android/build/
+frontend/BundesligaWrapped/ios/build/
+frontend/BundesligaWrapped/ios/Pods/
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── Windows ───────────────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
