@@ -6,7 +6,7 @@ Unit tests for the personalization engine.
 Tests three user archetypes (super fan, casual, stats nerd) and validates
 all scoring functions with edge cases.
 
-Run: py -m pytest backend/pipeline/test_personalization.py -v
+Run: python -m pytest backend/tests/test_personalization.py -v
 """
 
 import pytest
@@ -213,7 +213,6 @@ class TestScorePlayerImportance:
     def test_non_favourite_productive_player(self, casual_fan, kane):
         """Productive player without being a favourite still scores well."""
         score = score_player_importance(casual_fan, kane)
-        # No favourite bonus (0.5), but high goals+assists and appearances
         assert 0.3 <= score <= 0.6
 
     def test_bench_player_scores_low(self, super_fan, bench_player):
@@ -228,7 +227,6 @@ class TestScorePlayerImportance:
 
     def test_favourite_bonus_is_dominant(self, super_fan, bench_player):
         """Even a bench player who is a favourite gets the 0.5 bonus."""
-        # Add bench player to favourites
         super_fan.favorite_player_ids.append("DFL-OBJ-BENCH1")
         score = score_player_importance(super_fan, bench_player)
         assert score >= 0.5
@@ -265,6 +263,12 @@ class TestClassifySeasonNarrative:
         club = ClubStats(wins=19, draws=5, losses=10, points=62, matches_played=34)
         assert classify_season_narrative(club) != "title_race"
 
+    def test_narrative_is_valid_value(self, bayern_club, midtable_club, struggling_club, comeback_club):
+        """All narrative classifications must be one of the four valid values."""
+        valid = {"title_race", "comeback", "solid", "struggle"}
+        for club in [bayern_club, midtable_club, struggling_club, comeback_club]:
+            assert classify_season_narrative(club) in valid
+
 
 # ---------------------------------------------------------------------------
 # Tests: score_match_drama
@@ -280,7 +284,6 @@ class TestScoreMatchDrama:
     def test_sold_out_bonus(self, sample_matches):
         """Sold-out match gets a bonus."""
         sold_out = score_match_drama(sample_matches["DFL-MAT-DEMO01"], "DFL-CLU-00000G")
-        # DEMO01 is sold out, DEMO02 is not
         not_sold_out = score_match_drama(sample_matches["DFL-MAT-DEMO02"], "DFL-CLU-00000G")
         assert sold_out > not_sold_out
 
@@ -293,7 +296,7 @@ class TestScoreMatchDrama:
     def test_close_result_bonus(self, sample_matches):
         """1-goal margin (DEMO02: 1:0) gets close-result bonus."""
         drama = score_match_drama(sample_matches["DFL-MAT-DEMO02"], "DFL-CLU-00000G")
-        assert drama > 0  # should have at least the close-result + win bonus
+        assert drama > 0
 
 
 # ---------------------------------------------------------------------------
@@ -304,16 +307,15 @@ class TestComputeFanDna:
     def test_super_fan_high_score(self, super_fan):
         score, breakdown, archetype = compute_fan_dna(super_fan)
         assert score >= 60
-        assert breakdown["loyalty"] >= 80  # 12/12 months
+        assert breakdown["loyalty"] >= 80
 
     def test_casual_fan_low_score(self, casual_fan):
         score, breakdown, archetype = compute_fan_dna(casual_fan)
         assert score < 40
-        assert breakdown["loyalty"] < 50  # 4/12 months
+        assert breakdown["loyalty"] < 50
 
     def test_archetype_assignment(self, super_fan, stats_nerd):
         _, _, archetype_super = compute_fan_dna(super_fan)
-        # Super fan has high loyalty (12 months) → Season Ticket Holder
         assert "Season Ticket" in archetype_super or "Matchday" in archetype_super
 
     def test_score_bounded(self, super_fan):
@@ -330,9 +332,8 @@ class TestBuildContext:
         """Super fan with Kane as favourite → Kane should be top_player."""
         players = [kane, musiala]
         ctx = build_context(super_fan, bayern_club, players, sample_matches, tone="fan")
-
         assert ctx.favourite_player is not None
-        assert ctx.favourite_player.player_id == "DFL-OBJ-J00ZZ3"  # Kane
+        assert ctx.favourite_player.player_id == "DFL-OBJ-J00ZZ3"
         assert ctx.fan_dna_score > 50
         assert ctx.hero_stat_value > 0
         assert ctx.tone == "fan"
@@ -341,8 +342,6 @@ class TestBuildContext:
         """Casual fan with no favourites → falls back to top scorer."""
         players = [kane, musiala]
         ctx = build_context(casual_fan, bayern_club, players, sample_matches)
-
-        # Should still get a top player (Kane has highest score without favourite bonus)
         assert ctx.favourite_player is not None
         assert ctx.fan_dna_score < 40
 
@@ -350,8 +349,6 @@ class TestBuildContext:
         """Stats nerd → should get stats-related fun fact."""
         players = [kane, musiala]
         ctx = build_context(stats_nerd, bayern_club, players, sample_matches)
-
-        # Stats nerd should have stats-related personal angle
         assert "stats" in ctx.personal_angle_stat.lower() or "app" in ctx.personal_angle_stat.lower()
 
     def test_empty_players_handled(self, super_fan, bayern_club, sample_matches):
@@ -369,3 +366,15 @@ class TestBuildContext:
         """Tone parameter should be set on the context."""
         ctx = build_context(super_fan, bayern_club, [kane], sample_matches, tone="analyst")
         assert ctx.tone == "analyst"
+
+    def test_personal_angle_not_empty(self, super_fan, bayern_club, kane, sample_matches):
+        """Personal angle stat should always be a non-empty string."""
+        ctx = build_context(super_fan, bayern_club, [kane], sample_matches)
+        assert ctx.personal_angle_stat
+        assert len(ctx.personal_angle_stat) > 5
+
+    def test_club_color_is_valid_hex(self, super_fan, bayern_club, kane, sample_matches):
+        """Club primary color must be a valid hex string."""
+        ctx = build_context(super_fan, bayern_club, [kane], sample_matches)
+        assert ctx.club.primary_color_hex.startswith("#")
+        assert len(ctx.club.primary_color_hex) == 7

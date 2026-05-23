@@ -565,7 +565,7 @@ def run_pipeline(
             "DFL-MAT-MOCK01": MatchRecord(
                 match_id="DFL-MAT-MOCK01", matchday=10,
                 home_team_id=club_id, home_team_name=club_name_resolved,
-                away_team_id="DFL-CLU-000007", away_team_name="Borussia Dortmund",
+                away_team_id="DFL-CLU-OPPONENT", away_team_name="Opponent FC",
                 result="3:1", home_goals=3, away_goals=1, total_goals=4,
                 stadium_name="Home Stadium", spectators=50000, sold_out=True,
             ),

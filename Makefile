@@ -43,7 +43,7 @@ run-demo:
 
 ## Run the full test suite with verbose output.
 test:
-	$(PYTEST) backend/pipeline/test_personalization.py -v
+	$(VENV_PYTHON) -m pytest backend/tests/ -v --tb=short
 
 ## Dry-run the slide assembler for a single user (quick check).
 run-single:

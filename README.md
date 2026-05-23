@@ -85,8 +85,9 @@ Or paste them into a `.env` file (copy from `.env.example`).
 
 ```bash
 cd bundesliga-wrapped
-py -m venv venv
-venv\Scripts\activate          # Windows
+python -m venv venv
+source venv/bin/activate          # Mac/Linux
+venv\Scripts\activate             # Windows
 pip install -r backend/requirements.txt
 ```
 
@@ -160,14 +161,14 @@ The pipeline auto-resolves club colors, player data, and match history.
 ## Running Tests
 
 ```bash
-# All tests (33 total):
-py -m pytest backend/tests/ backend/pipeline/test_personalization.py -v
+# All tests:
+python -m pytest backend/tests/ -v
 
-# Integration tests only:
-py -m pytest backend/tests/test_integration.py -v
-
-# Personalization unit tests only:
-py -m pytest backend/pipeline/test_personalization.py -v
+# Specific suites:
+python -m pytest backend/tests/test_personalization.py -v
+python -m pytest backend/tests/test_fan_dna.py -v
+python -m pytest backend/tests/test_narrative.py -v
+python -m pytest backend/tests/test_integration.py -v
 ```
 
 ---
