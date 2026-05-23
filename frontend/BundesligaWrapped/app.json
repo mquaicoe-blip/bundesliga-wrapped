@@ -10,7 +10,6 @@
       "backgroundColor": "#1A1A2E"
     },
     "plugins": [
-      "expo-router",
       "react-native-reanimated"
     ]
   }

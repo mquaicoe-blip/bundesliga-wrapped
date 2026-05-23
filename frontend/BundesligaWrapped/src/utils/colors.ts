@@ -7,7 +7,7 @@
  * Compute a gradient array from a primary and secondary club color.
  * Used by LinearGradient as the background for each slide.
  */
-export function getSlideGradient(primary: string, secondary: string): string[] {
+export function getSlideGradient(primary: string, secondary: string): [string, string, string] {
   return [primary, darken(primary, 0.3), secondary];
 }
 
